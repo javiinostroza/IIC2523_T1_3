@@ -19,60 +19,64 @@ type Philosopher struct {
 }
 
 type Host struct {
-    phy_eating []bool
+    phi_eating []bool
 }
 
-func mayIEat(host Host, phy Philosopher) bool {
+func mayIEat(host Host, phi Philosopher) bool {
+    /* Retorna True si el filosofo phi está habilitado para comer*/
     var people_eating = 0
-    for i := 0; i < 5; i++ {
-        if host.phy_eating[i] {
+    for i := 0; i < 5; i++ { // Revisa cuantas personas hay comiendo
+        if host.phi_eating[i] {
             people_eating += 1
         }
     }
-    if (people_eating < 2) {
-        AllowEating(host, phy)
+    if (people_eating < 2) { // Si hay menos de dos persoas intenta habilitar al filosofo
+        AllowEating(host, phi)
         return true
     }
     return false
 }
 
-func startDinner(phy Philosopher, host Host, timesToEat int, wg *sync.WaitGroup) {
-    for i := 0; i < timesToEat; i++ {
+func startDinner(phi Philosopher, host Host, timesToEat int, wg *sync.WaitGroup) {
+    /* 
+    Se ejecuta cuando los filósofos comienzan la cena y corresponde a la función que permite que 
+    estos coman 2 veces.
+    */
+    for i := 0; i < timesToEat; i++ { // timesToEat = 2
         ate := false
-        for !ate {
-            if mayIEat(host, phy) {
-                Eat(phy, host)
+        for !ate { // Este for se ejecuta todo el tiempo hasta que ate=true
+            if mayIEat(host, phi) { // Solicita al Host poder comer
+                Eat(phi, host) 
                 ate = true
             }
         }
-
     }
     defer wg.Done()
 }
 
-func Eat(phy Philosopher, host Host) {
-	fmt.Printf("Filósofo %d comiendo\n", phy.num)
-    time.Sleep(time.Second)
-	fmt.Printf("Filósofo %d terminó de comer\n", phy.num)
-    phy.leftHand.Unlock()
-    phy.rightHand.Unlock()
-    host.phy_eating[phy.num] = false
-    time.Sleep(time.Second)
-}
-
-func AllowEating(host Host, phy Philosopher){
+func Eat(phi Philosopher, host Host) {
     /*
-    DEBE SER ALEATORIO EL PALILLO QUE SE BLOQUEA PRIMERO !!!!
-    ESPERAR RESPUESTA AYUDANTE SOBRE SI SE PUEDE USAR RANDOM...
-    POR MIENTRAS SE SELECCIONARÁ PRIMERO EL DERECHO
+    Corresponde a la función donde el filósofo come (ya tiene desbloqueados los palillos).
+    Una vez que termina de comer desbloquea los palillos y se actualiza la información del host.
     */
-    phy.rightHand.Lock()
-    phy.leftHand.Lock()
-    host.phy_eating[phy.num] = true
+	fmt.Printf("Filósofo %d comiendo\n", phi.num)
+    time.Sleep(time.Second)
+	fmt.Printf("Filósofo %d terminó de comer\n", phi.num)
+    phi.leftHand.Unlock()
+    phi.rightHand.Unlock()
+    host.phi_eating[phi.num] = false
+    time.Sleep(time.Second)
 }
 
-// Channels: y WaitGrroups
-
+func AllowEating(host Host, phi Philosopher){
+    /*
+    Bloquea los palillos correspondientes al filosofo que quiere comer y actualiza la
+    información del host.
+    */
+    phi.rightHand.Lock()
+    phi.leftHand.Lock()
+    host.phi_eating[phi.num] = true
+}
 
 func main() { 
     var wg sync.WaitGroup
